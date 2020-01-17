@@ -19,7 +19,7 @@ import tensorflow as tf
 
 sess = tf.Session()
 
-from keras.regularizers import l1l2 as L1L2
+from keras.regularizers import L1L2
 
 customL2_regularizer = L1L2(l2=1e-6)
 from keras import backend as K
