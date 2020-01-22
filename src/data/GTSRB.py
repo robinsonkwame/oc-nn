@@ -15,7 +15,7 @@ import csv
 import keras
 from keras.datasets import mnist
 from keras.models import Model, Sequential
-from keras.layers import Activation,LeakyReLU,Input, Dense, Conv2D, MaxPooling2D, UpSampling2D, Flatten, Reshape,BatchNormalization, regularizers
+from keras.layers import Activation,LeakyReLU,Input, Dense, Conv2D, MaxPooling2D, UpSampling2D, Flatten, Reshape,BatchNormalization
 from keras.callbacks import ModelCheckpoint
 import matplotlib.pyplot as plt
 from keras import backend as K

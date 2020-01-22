@@ -42,7 +42,7 @@ from keras.optimizers import SGD, Adagrad, Adadelta, RMSprop, Adam
 
 from keras.models import Model, Sequential
 from keras.layers import Activation, LeakyReLU, Input, Dense, Conv2D, MaxPooling2D, UpSampling2D, Flatten, Reshape, \
-    BatchNormalization, regularizers
+    BatchNormalization
 
 from sklearn.metrics import roc_auc_score
 
