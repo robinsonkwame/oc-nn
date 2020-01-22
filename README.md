@@ -1,7 +1,9 @@
+# This fork pins tensorflow, keras versions in notebooks/OC-NN/MNIST/OCNN_Reproduction.ipynb so that the example can run on modern Google co-lab
+
 # Keras-Tensorflow Implementation of One Class Neural Networks.
 
 
-This repository provides a Keras-Tensorflow implementation of the One Class Neural Network method presented in our paper ”Anomaly Detection using One Class Neural Networks”.
+This repository provides a Keras-Tensorflow implementation of the One Class Neural Network method presented in our paper ”Anomaly Detection using One Class Neural Networks".
 
 # Citations and Contact.
 
