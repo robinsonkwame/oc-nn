@@ -272,6 +272,14 @@ class OneClass_SVDD:
             # serialize weights to HDF5
             model.save_weights(path + "DCAE_DIGIT__" + str(Cfg.mnist_normal) + "__model.h5")
             # print("Saved model to disk....")
+        elif (OneClass_SVDD.DATASET == "kente"):
+            model_json = model.to_json()
+            with open(path + "DCAE_DIGIT__" + str(Cfg.mnist_normal) + "__model.json", "w") as json_file:
+                json_file.write(model_json)
+            # serialize weights to HDF5
+            model.save_weights(path + "DCAE_DIGIT__" + str(Cfg.mnist_normal) + "__model.h5")
+            # print("Saved model to disk....")
+
 
         return
 
@@ -569,7 +577,48 @@ class OneClass_SVDD:
     def get_oneClass_trainData(self):
         # X_train = np.concatenate((self.data._X_train, self.data._X_val))
         # y_train = np.concatenate((self.data._y_train, self.data._y_val))
-        if(OneClass_SVDD.DATASET== "mnist"):
+        if(OneClass_SVDD.DATASET== "kente"):
+            X_train = self.data._X_train
+            y_train = self.data._y_train
+    
+            X_test = self.data._X_test
+            y_test = self.data._y_test
+    
+            ## Combine the positive data
+            trainXPos = X_train[np.where(y_train == 0)]
+            trainYPos = np.zeros(len(trainXPos))
+    
+            testXPos = X_test[np.where(y_test == 0)]
+            testYPos = np.zeros(len(testXPos))
+    
+            # Combine the negative data
+            trainXNeg = X_train[np.where(y_train == 1)]
+            trainYNeg = np.ones(len(trainXNeg))
+    
+            testXNeg = X_test[np.where(y_test == 1)]
+            testYNeg = np.ones(len(testXNeg))
+    
+            X_trainPOS = np.concatenate((trainXPos, testXPos))
+            y_trainPOS = np.concatenate((trainYPos, testYPos))
+    
+            X_trainNEG = np.concatenate((trainXNeg, testXNeg))
+            y_trainNEG = np.concatenate((trainYNeg, testYNeg))
+    
+            # Just 0.01 points are the number of anomalies.
+            num_of_anomalies = int(0.01 * len(X_trainPOS))
+            X_trainNEG = X_trainNEG[0:num_of_anomalies]
+            y_trainNEG = y_trainNEG[0:num_of_anomalies]
+    
+            X_train = np.concatenate((X_trainPOS, X_trainNEG))
+            y_train = np.concatenate((y_trainPOS, y_trainNEG))
+    
+            print("[INFO: ] Shape of One Class Input Data used in training", X_train.shape)
+            print("[INFO: ] Shape of (Positive) One Class Input Data used in training", X_trainPOS.shape)
+            print("[INFO: ] Shape of (Negative) One Class Input Data used in training", X_trainNEG.shape)
+            
+            return X_train
+
+        elif(OneClass_SVDD.DATASET== "mnist"):
             X_train = self.data._X_train
             y_train = self.data._y_train
     
@@ -700,7 +749,52 @@ class OneClass_SVDD:
 
     def get_oneClass_testData(self):
 
-        if(OneClass_SVDD.DATASET == "mnist"):
+        if(OneClass_SVDD.DATASET == "kente"):
+            
+            X_train = self.data._X_train
+            y_train = self.data._y_train
+    
+            X_test = self.data._X_test
+            y_test = self.data._y_test
+    
+            ## Combine the positive data
+            trainXPos = X_train[np.where(y_train == 0)]
+            trainYPos = np.zeros(len(trainXPos))
+    
+            testXPos = X_test[np.where(y_test == 0)]
+            testYPos = np.zeros(len(testXPos))
+    
+            # Combine the negative data
+            trainXNeg = X_train[np.where(y_train == 1)]
+            trainYNeg = np.ones(len(trainXNeg))
+    
+            testXNeg = X_test[np.where(y_test == 1)]
+            testYNeg = np.ones(len(testXNeg))
+
+            X_testPOS = np.concatenate((trainXPos, testXPos))
+            y_testPOS = np.concatenate((trainYPos, testYPos))
+    
+            X_testNEG = np.concatenate((trainXNeg, testXNeg))
+            y_testNEG = np.concatenate((trainYNeg, testYNeg))
+    
+            # Just 0.01 points are the number of anomalies.
+            num_of_anomalies = int(0.01 * len(X_testPOS))
+            X_testNEG = X_testNEG[0:num_of_anomalies]
+            y_testNEG = y_testNEG[0:num_of_anomalies]
+    
+            X_test = np.concatenate((X_testPOS, X_testNEG))
+            y_test = np.concatenate((y_testPOS, y_testNEG))
+    
+            PosBoundary = len(X_testPOS)
+            NegBoundary = len(X_testNEG)
+    
+            print("[INFO: ] Shape of One Class Input Data used in testing", X_test.shape)
+            print("[INFO: ] Shape of (Positive) One Class Input Data used in testing", X_testPOS.shape)
+            print("[INFO: ] Shape of (Negative) One Class Input Data used in testing", X_testNEG.shape)
+            
+            return [X_test, y_test, PosBoundary, NegBoundary,X_test]
+
+        elif(OneClass_SVDD.DATASET == "mnist"):
             
             X_train = self.data._X_train
             y_train = self.data._y_train
@@ -1304,7 +1398,10 @@ class OneClass_SVDD:
     def pretrain_cae(self, solver, lr, n_epochs):
         
         # Compile the autoencoder with l2 loss and train for specified number of epochs
-        if(OneClass_SVDD.DATASET == "mnist"):
+        if(OneClass_SVDD.DATASET == "kente"):
+            [cae, encoder] = self.compile_autoencoder()
+            X = self.data._X_train
+        elif(OneClass_SVDD.DATASET == "mnist"):
             [cae, encoder] = self.compile_autoencoder()
             X = self.data._X_train
         elif(OneClass_SVDD.DATASET == "cifar10"):
@@ -1378,7 +1475,22 @@ class OneClass_SVDD:
             X_decoded = cae.predict(X_test)
             # self.save_reconstructed_image(X_test, X_decoded)
             print("INFO: Autoencoder training completed for mnist....")
+
+        elif(OneClass_SVDD.DATASET == "kente"):
+            X_test_sample = self.data._X_test[-5:]
+            import random
+            random_list = random.sample(range(1, 700), 5)
             
+            
+            X_train_sample = self.data._X_test[random_list]
+            print("[INFO:] The shape of self.data._X_train", self.data._X_train.shape)
+            print("[INFO:] The shape of self.data._X_test", self.data._X_test.shape)
+             
+            X_test = np.concatenate((X_train_sample, X_test_sample))
+            
+            X_decoded = cae.predict(X_test)
+            # self.save_reconstructed_image(X_test, X_decoded)
+            print("INFO: Autoencoder training completed for kente....")            
         # self.save_reconstructed_image(X_test, X_decoded)
         
         
@@ -1541,7 +1653,11 @@ class OneClass_SVDD:
                 model_ocnn_svdd.add(Dense(self.h_size))
                 X_train_to_Adjust_R = self.data._X_train
                 trainX = X_train_to_Adjust_R
-                
+            elif(OneClass_SVDD.DATASET == "kente"):
+                model_ocnn_svdd.add(Dense(self.h_size))
+                X_train_to_Adjust_R = self.data._X_train
+                trainX = X_train_to_Adjust_R
+
             elif(OneClass_SVDD.DATASET == "cifar10"):
                 model_ocnn_svdd.add(Dense(self.h_size))
                 X_train_to_Adjust_R = self.data._X_train
@@ -1607,14 +1723,20 @@ class OneClass_SVDD:
             
             elif( OneClass_SVDD.DATASET == "mnist"):
                 X_train_to_Adjust_R = trainX
-           
+            elif( OneClass_SVDD.DATASET == "kente"):
+                X_train_to_Adjust_R = trainX           
             
             
             for layer in enoder_model_svdd.layers:
                 mode_ocnn_svdd.add(layer)
 
             mode_ocnn_svdd.add(Flatten())
-            
+
+            if(OneClass_SVDD.DATASET == "kente"):
+                
+                mode_ocnn_svdd.add(Dense(32,activation='linear',use_bias=False))
+
+
             if(OneClass_SVDD.DATASET == "mnist"):
                 
                 mode_ocnn_svdd.add(Dense(32,activation='linear',use_bias=False))
@@ -1886,6 +2008,9 @@ class OneClass_SVDD:
             print('Saving Top-100'+ str(lamda) + "most anomalous digit: @",self.results)
             io.imsave(self.results + '___' +str(lamda) + self.lossfunctype + 'Class_'+ str(Cfg.mnist_normal) + "_Top100.png", img)
 
+        if(OneClass_SVDD.DATASET == "kente"):
+            print('Saving Top-100'+ str(lamda) + "most anomalous kente cloths: @",self.results)
+            io.imsave(self.results + '___' +str(lamda) + self.lossfunctype + 'Class_'+ str(Cfg.mnist_normal) + "_Top100.png", img)
         
         return
     
@@ -2010,7 +2135,12 @@ class OneClass_SVDD:
             result = self.tile_raster_images(top_100_anomalies, [28, 28], [10, 10])
             print("[INFO:] Saving Anomalies Found at ..", self.results)
             io.imsave(self.results + self.lossfuncType + "__" + str(Cfg.mnist_normal) +"most_normal_Top100.png", result)
-            
+
+        elif(OneClass_SVDD.DATASET == "kente"):
+            top_100_anomalies = np.reshape(top_100_anomalies, (-1, 28, 28))
+            result = self.tile_raster_images(top_100_anomalies, [28, 28], [10, 10])
+            print("[INFO:] Saving Kente Anomalies Found at ..", self.results)
+            io.imsave(self.results + self.lossfuncType + "__" + str(Cfg.mnist_normal) +"most_normal_Top100.png", result)            
 
         return 
     
@@ -2034,7 +2164,13 @@ class OneClass_SVDD:
             result = self.tile_raster_images(top_100_anomalies, [28, 28], [10, 10])
             print("[INFO:] Saving Anomalies Found at ..", self.results)
             io.imsave(self.results + self.lossfuncType + "__" + str(Cfg.mnist_normal) +"most_anomalous_Top100.png", result)
-           
+
+        elif(OneClass_SVDD.DATASET == "kente"):
+            top_100_anomalies = np.reshape(top_100_anomalies, (-1, 28, 28))
+            result = self.tile_raster_images(top_100_anomalies, [28, 28], [10, 10])
+            print("[INFO:] Saving Kenete Anomalies Found at ..", self.results)
+            io.imsave(self.results + self.lossfuncType + "__" + str(Cfg.mnist_normal) +"most_anomalous_Top100.png", result)
+
         return 
 
     def predict(self):

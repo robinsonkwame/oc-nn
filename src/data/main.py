@@ -2,7 +2,7 @@ from src.data.__local__ import implemented_datasets
 from src.data.mnist import MNIST_DataLoader
 from src.data.cifar10 import CIFAR_10_DataLoader
 from src.data.GTSRB import GTSRB_DataLoader
-
+from src.data.kente import KENTE_DataLoader
 
 def load_dataset(learner, dataset_name, pretrain=False):
 
@@ -16,6 +16,9 @@ def load_dataset(learner, dataset_name, pretrain=False):
 
     if dataset_name == "gtsrb":
         data_loader = GTSRB_DataLoader
+
+    if dataset_name == "kente":
+        data_loader = KENTE_DataLoader
 
     # load data with data loader
     learner.load_data(data_loader=data_loader, pretrain=pretrain)
