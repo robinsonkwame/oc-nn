@@ -91,6 +91,14 @@ class Configuration(object):
     cifar10_normal = 0 # aeroplane= 0, automobile=1, bird=2, cat=3, deer=4, dog=5, frog=6, horse=7, ship=8, truck = 9
     cifar10_outlier = -1
 
+    # Kente dataset parameters
+    kente_val_frac = 1./6
+    kente_bias = True
+    kente_rep_dim = 32
+    kente_architecture = 1  # choose one of the implemented architectures
+    kente_normal = 0 ##  9,8,7,6,5,4,3,2,1 0 
+    kente_outlier = -1
+
     # GTSRB dataset parameters
     gtsrb_rep_dim = 32
 

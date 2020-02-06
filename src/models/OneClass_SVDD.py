@@ -163,6 +163,18 @@ class OneClass_SVDD:
         load_dataset(self, dataset.lower(), self.pretrain)
 
         # Depending on the dataset build respective autoencoder architecture
+        if (dataset.lower() == "kente"):
+            from src.data.kente import KENTE_DataLoader
+            # Create the robust cae for the dataset passed
+            self.prj_path = "/content/drive/My Drive/2018/Colab_Deep_Learning/one_class_neural_networks/"
+            # self.prj_path = "/Users/raghav/envPython3/experiments/one_class_neural_networks/"
+            self.nn_model = KENTE_DataLoader()
+            self.load_dcae_path = self.prj_path + "/models/KENTE/RCAE/KENTE/"
+            self.lossfuncType = lossfuncType
+            self.n_train = len(self.data._X_train)
+            self.val = np.ones(Cfg.kente_rep_dim) * 0.5
+
+        # Depending on the dataset build respective autoencoder architecture
         if (dataset.lower() == "mnist"):
             from src.data.mnist import MNIST_DataLoader
             # Create the robust cae for the dataset passed
