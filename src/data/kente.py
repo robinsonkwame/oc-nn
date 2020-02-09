@@ -16,6 +16,7 @@ from keras.callbacks import ModelCheckpoint
 import matplotlib.pyplot as plt
 from keras import backend as K
 from keras.optimizers import SGD,Adam
+from sklearn.model_selection import train_test_split
 from sklearn.metrics import average_precision_score,mean_squared_error
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import precision_score
@@ -63,9 +64,16 @@ class KENTE_DataLoader(DataLoader):
         DataLoader.__init__(self)
 
         self.dataset_name = "mnist"
-        self.n_train = 50000
-        self.n_val = 10000
-        self.n_test = 10000
+        # self.n_train = 50000
+        # self.n_val = 10000
+        # self.n_test = 10000
+
+        # These values appear to be overwritten when
+        # batch sizes are being set but these are known
+        # sizes that could be used
+        self.n_train = 6500
+        self.n_val = 2000
+        self.n_test = 2000
 
         self.seed = Cfg.seed
 
@@ -125,35 +133,50 @@ class KENTE_DataLoader(DataLoader):
         print("[INFO: ] Loading data...")
 
 
-        #  todo: update with Kente specific data loader
-        X = load_mnist_images('%strain-images-idx3-ubyte.gz' %
-                              self.data_path)
-        y = load_mnist_labels('%strain-labels-idx1-ubyte.gz' %
-                              self.data_path)
-        X_test = load_mnist_images('%st10k-images-idx3-ubyte.gz' %
-                                   self.data_path)
-        y_test = load_mnist_labels('%st10k-labels-idx1-ubyte.gz' %
-                                   self.data_path)
+        # #  todo: update with Kente specific data loader
+        # X = load_mnist_images('%strain-images-idx3-ubyte.gz' %
+        #                       self.data_path)
+        # y = load_mnist_labels('%strain-labels-idx1-ubyte.gz' %
+        #                       self.data_path)
+        # X_test = load_mnist_images('%st10k-images-idx3-ubyte.gz' %
+        #                            self.data_path)
+        # y_test = load_mnist_labels('%st10k-labels-idx1-ubyte.gz' %
+        #                            self.data_path)
+
+        #  todo put in numpy direct loader
+        kente_images = np.load('images.npy' % self.data_path, allow_pickle=True)
+        kente_labels = np.load('classses.npy' % self.data_path, allow_pickle=True)
+
+        # ... construct train, test sets, note stratified balance
+        X, X_test, y, y_test = train_test_split(
+            kente_images, kente_labels,
+            test_size=0.20*len(kente_labels),
+            random_state=0,
+            stratify=kente_labels
+        ) 
+        # ... now all the code below should load appropriately
 
         if Cfg.ad_experiment:
 
             # set normal and anomalous class
-            normal = []
-            outliers = []
+            normal = [0]
+            outliers = [-1]
 
-            if Cfg.kente_normal == -1:
-                normal = list(range(0, 10))
-                normal.remove(Cfg.kente_outlier)
-            else:
-                normal.append(Cfg.kente_normal)
+            # if Cfg.kente_normal == -1:
+            #     #normal = list(range(0, 10))
+            #     normal = list(range(-1, 1))
+            #     normal.remove(Cfg.kente_outlier)
+            # else:
+            #     normal.append(Cfg.kente_normal)
 
-            if Cfg.kente_outlier == -1:
-                outliers = list(range(0, 10))
-                outliers.remove(Cfg.kente_normal)
-            else:
-                outliers.append(Cfg.kente_outlier)
-                print("[INFO:] The  label  of outlier  points are ", Cfg.kente_outlier)
-                print("[INFO:] The  number of outlier  points are ", len(outliers))
+            # if Cfg.kente_outlier == -1:
+            #     #outliers = list(range(0, 10))
+            #     outliers = list(range(-1, 1))                
+            #     outliers.remove(Cfg.kente_normal)
+            # else:
+            #     outliers.append(Cfg.kente_outlier)
+            #     print("[INFO:] The  label  of outlier  points are ", Cfg.kente_outlier)
+            #     print("[INFO:] The  number of outlier  points are ", len(outliers))
             
             print("[INFO:] The  label  of normal points are ", Cfg.kente_normal)
             # extract normal and anomalous class
@@ -312,6 +335,7 @@ class KENTE_DataLoader(DataLoader):
         return custom_rcae
 
 
+    # note: not used
     def encoder(self,input_img):
         # encoder
         # input = 28 x 28 x 1 (wide and thin)
@@ -488,27 +512,90 @@ class KENTE_DataLoader(DataLoader):
     #
     #     return autoencoder
 
-    # Build lenet style autoencoder
+    # # Build lenet style autoencoder
+    # def build_autoencoder(self):
+
+    #     # initialize the model
+    #     autoencoder = Sequential()
+    #     inputShape = (28, 28, 1)
+    #     chanDim = -1 # since depth is appearing the end
+    #     # first set of CONV => RELU => POOL layers
+    #     autoencoder.add(Conv2D(20, (5, 5), padding="same",input_shape=inputShape))
+    #     autoencoder.add(Activation("relu"))
+    #     autoencoder.add(BatchNormalization(axis=chanDim))
+    #     autoencoder.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
+    #     # second set of CONV => RELU => POOL layers
+    #     autoencoder.add(Conv2D(50, (5, 5), padding="same"))
+    #     autoencoder.add(Activation("relu"))
+    #     autoencoder.add(BatchNormalization(axis=chanDim))
+    #     autoencoder.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
+    #     # first (and only) set of FC => RELU layers
+    #     autoencoder.add(Flatten())
+
+    #     autoencoder.add(Dense(2450))
+    #     autoencoder.add(Activation("relu"))
+    #     autoencoder.add(BatchNormalization(axis=chanDim))
+
+    #     autoencoder.add(Dense(32))
+    #     autoencoder.add(Activation("relu"))
+    #     autoencoder.add(BatchNormalization(axis=chanDim))
+
+
+
+    #     autoencoder.add(Dense(2450))
+    #     autoencoder.add(Activation("relu"))
+    #     autoencoder.add(BatchNormalization(axis=chanDim))
+
+    #     autoencoder.add(Reshape((7, 7, 50)))
+
+    #     autoencoder.add(Conv2D(50, (5, 5), padding="same"))
+    #     autoencoder.add(Activation("relu"))
+    #     autoencoder.add(BatchNormalization(axis=chanDim))
+    #     autoencoder.add(UpSampling2D(size=(2, 2)))
+
+    #     autoencoder.add(Conv2D(20, (5, 5), padding="same",
+    #                            input_shape=inputShape))
+    #     autoencoder.add(Activation("relu"))
+    #     autoencoder.add(BatchNormalization(axis=chanDim))
+    #     autoencoder.add(UpSampling2D(size=(2, 2)))
+
+    #     autoencoder.add(Conv2D(1, (5, 5), use_bias=True, padding='same'))
+    #     autoencoder.add(Activation('sigmoid'))
+
+
+
+
+
+
+    #     return autoencoder
+
     def build_autoencoder(self):
+        # Borrowed from GTSRB.py, since we use 3 channels, have same size
 
         # initialize the model
         autoencoder = Sequential()
-        inputShape = (28, 28, 1)
+        inputShape = (32,32,3)
         chanDim = -1 # since depth is appearing the end
         # first set of CONV => RELU => POOL layers
-        autoencoder.add(Conv2D(20, (5, 5), padding="same",input_shape=inputShape))
+        autoencoder.add(Conv2D(64, (3, 3), padding="same",input_shape=inputShape))
         autoencoder.add(Activation("relu"))
         autoencoder.add(BatchNormalization(axis=chanDim))
         autoencoder.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
         # second set of CONV => RELU => POOL layers
-        autoencoder.add(Conv2D(50, (5, 5), padding="same"))
+        autoencoder.add(Conv2D(32, (3, 3), padding="same"))
         autoencoder.add(Activation("relu"))
         autoencoder.add(BatchNormalization(axis=chanDim))
         autoencoder.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
+
+        autoencoder.add(Conv2D(16, (3, 3), padding="same"))
+        autoencoder.add(Activation("relu"))
+        autoencoder.add(BatchNormalization(axis=chanDim))
+        autoencoder.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
+
         # first (and only) set of FC => RELU layers
         autoencoder.add(Flatten())
 
-        autoencoder.add(Dense(2450))
+        autoencoder.add(Dense(256))
         autoencoder.add(Activation("relu"))
         autoencoder.add(BatchNormalization(axis=chanDim))
 
@@ -516,32 +603,32 @@ class KENTE_DataLoader(DataLoader):
         autoencoder.add(Activation("relu"))
         autoencoder.add(BatchNormalization(axis=chanDim))
 
-
-
-        autoencoder.add(Dense(2450))
+        autoencoder.add(Dense(256))
         autoencoder.add(Activation("relu"))
         autoencoder.add(BatchNormalization(axis=chanDim))
 
-        autoencoder.add(Reshape((7, 7, 50)))
+        autoencoder.add(Reshape((4, 4, 16)))
 
-        autoencoder.add(Conv2D(50, (5, 5), padding="same"))
+        autoencoder.add(Conv2D(16, (3, 3), padding="same"))
         autoencoder.add(Activation("relu"))
         autoencoder.add(BatchNormalization(axis=chanDim))
         autoencoder.add(UpSampling2D(size=(2, 2)))
 
-        autoencoder.add(Conv2D(20, (5, 5), padding="same",
+        autoencoder.add(Conv2D(32, (3, 3), padding="same"))
+        autoencoder.add(Activation("relu"))
+        autoencoder.add(BatchNormalization(axis=chanDim))
+        autoencoder.add(UpSampling2D(size=(2, 2)))
+
+        autoencoder.add(Conv2D(64, (3, 3), padding="same",
                                input_shape=inputShape))
         autoencoder.add(Activation("relu"))
         autoencoder.add(BatchNormalization(axis=chanDim))
         autoencoder.add(UpSampling2D(size=(2, 2)))
 
-        autoencoder.add(Conv2D(1, (5, 5), use_bias=True, padding='same'))
+        autoencoder.add(Conv2D(3, (3, 3), use_bias=True, padding='same'))
         autoencoder.add(Activation('sigmoid'))
 
-
-
-
-
+        # print("[INFO:] Autoencoder summary ", autoencoder.summary())
 
         return autoencoder
 
@@ -558,11 +645,11 @@ class KENTE_DataLoader(DataLoader):
 
     def compute_mse(self,Xclean, Xdecoded, lamda):
         # print len(Xdecoded)
-        Xclean = np.reshape(Xclean, (len(Xclean), 784))
+        Xclean = np.reshape(Xclean, (len(Xclean), 1024))
         m, n = Xclean.shape
         Xdecoded = np.reshape(np.asarray(Xdecoded), (m, n))
         # print Xdecoded.shape
-        Xdecoded = np.reshape(Xdecoded, (len(Xdecoded), 784))
+        Xdecoded = np.reshape(Xdecoded, (len(Xdecoded), 1024))
 
         print("[INFO:] Xclean  MSE Computed shape", Xclean.shape)
 
@@ -611,11 +698,11 @@ class KENTE_DataLoader(DataLoader):
     def compute_best_worst_rank(self,testX, Xdecoded):
         # print len(Xdecoded)
 
-        testX = np.reshape(testX, (len(testX), 784))
+        testX = np.reshape(testX, (len(testX), 1024))
         m, n = testX.shape
         Xdecoded = np.reshape(np.asarray(Xdecoded), (m, n))
         # print Xdecoded.shape
-        Xdecoded = np.reshape(Xdecoded, (len(Xdecoded), 784))
+        Xdecoded = np.reshape(Xdecoded, (len(Xdecoded), 1024))
 
         # Rank the images by reconstruction error
         anamolies_dict = {}
@@ -695,9 +782,9 @@ class KENTE_DataLoader(DataLoader):
         #           run_id="auto_encoder", batch_size=128)
 
         ae_output = self.cae.predict(X_N)
-        #Reshape it back to 784 pixels
-        ae_output = np.reshape(ae_output, (len(ae_output), 784))
-        Xclean = np.reshape(Xclean, (len(Xclean), 784))
+        #Reshape it back to 1024 pixels
+        ae_output = np.reshape(ae_output, (len(ae_output), 1024))
+        Xclean = np.reshape(Xclean, (len(Xclean), 1024))
 
         np_mean_mse =  np.mean(mean_squared_error(Xclean,ae_output))
         #Compute L2 norm during training and take the average of mse as threshold to set the label
@@ -711,8 +798,80 @@ class KENTE_DataLoader(DataLoader):
 
         return ae_output
 
+    # def compute_softhreshold(self,Xtrue, N, lamda,Xclean):
+    #     Xtrue = np.reshape(Xtrue, (len(Xtrue), 784))
+    #     print
+    #     "lamda passed ", lamda
+    #     # inner loop for softthresholding
+    #     for i in range(0, 1):
+    #         X_N = Xtrue - N
+    #         XAuto = self.fit_auto_conv_AE(X_N,Xtrue,lamda)  # XAuto is the predictions on train set of autoencoder
+    #         XAuto = np.asarray(XAuto)
+    #         # print "XAuto:",type(XAuto),XAuto.shape
+    #         softThresholdIn = Xtrue - XAuto
+    #         softThresholdIn = np.reshape(softThresholdIn, (len(softThresholdIn), 784))
+    #         N = self.soft_threshold(lamda, softThresholdIn)
+    #         print("Iteration NUmber is : ", i)
+    #         print("NUmber of non zero elements  for N,lamda", np.count_nonzero(N), lamda)
+    #         print("The shape of N", N.shape)
+    #         print("The minimum value of N ", np.amin(N))
+    #         print("The max value of N", np.amax(N))
+    #     self.Noise = N
+    #     return N
+
+    # def visualise_anamolies_detected(self,testX, noisytestX, decoded, N, best_top10_keys, worst_top10_keys, lamda):
+    #     side = 28
+    #     channel = 1
+    #     N = np.reshape(N, (len(N), 28,28,1))
+    #     # Display the decoded Original, noisy, reconstructed images
+    #     print("side:", side)
+    #     print("channel:", channel)
+    #     img = np.ndarray(shape=(side * 3, side * 10, channel))
+    #     print
+    #     "img shape:", img.shape
+
+    #     best_top10_keys = list(best_top10_keys)
+    #     worst_top10_keys = list(worst_top10_keys)
+
+    #     for i in range(10):
+    #         row = i // 10 * 3
+    #         col = i % 10
+    #         img[side * row:side * (row + 1), side * col:side * (col + 1), :] = testX[best_top10_keys[i]]
+    #         img[side * (row + 1):side * (row + 2), side * col:side * (col + 1), :] = decoded[best_top10_keys[i]]
+    #         img[side * (row + 2):side * (row + 3), side * col:side * (col + 1), :] = N[best_top10_keys[i]]
+    #         # img[side * (row + 3):side * (row + 4), side * col:side * (col + 1), :] = N[best_top10_keys[i]]
+
+    #     img *= 255
+    #     img = img.astype(np.uint8)
+    #     img = np.reshape(img, (side * 3, side * 10))
+    #     # Save the image decoded
+    #     print("\nSaving results for best after being encoded and decoded: @")
+    #     print(self.rcae_results + '/best/')
+    #     io.imsave(self.rcae_results  + '/best/' + str(lamda) + 'salt_p_denoising_cae_decode.png', img)
+
+    #     # Display the decoded Original, noisy, reconstructed images for worst
+    #     img = np.ndarray(shape=(side * 3, side * 10, channel))
+    #     for i in range(10):
+    #         row = i // 10 * 3
+    #         col = i % 10
+    #         img[side * row:side * (row + 1), side * col:side * (col + 1), :] = testX[worst_top10_keys[i]]
+    #         img[side * (row + 1):side * (row + 2), side * col:side * (col + 1), :] = decoded[worst_top10_keys[i]]
+    #         img[side * (row + 2):side * (row + 3), side * col:side * (col + 1), :] = N[worst_top10_keys[i]]
+    #         # img[side * (row + 3):side * (row + 4), side * col:side * (col + 1), :] = N[worst_top10_keys[i]]
+
+    #     img *= 255
+    #     img = img.astype(np.uint8)
+    #     img = np.reshape(img, (side * 3, side * 10))
+    #     # Save the image decoded
+    #     print("\nSaving results for worst after being encoded and decoded: @")
+    #     print(self.rcae_results + '/worst/')
+    #     io.imsave(self.rcae_results + '/worst/' + str(lamda) + 'salt_p_denoising_cae_decode.png', img)
+
+    #     return
+
+
     def compute_softhreshold(self,Xtrue, N, lamda,Xclean):
-        Xtrue = np.reshape(Xtrue, (len(Xtrue), 784))
+        Xtrue = np.reshape(Xtrue, (len(Xtrue), 3072))
         print
         "lamda passed ", lamda
         # inner loop for softthresholding
@@ -722,7 +881,7 @@ class KENTE_DataLoader(DataLoader):
             XAuto = np.asarray(XAuto)
             # print "XAuto:",type(XAuto),XAuto.shape
             softThresholdIn = Xtrue - XAuto
-            softThresholdIn = np.reshape(softThresholdIn, (len(softThresholdIn), 784))
+            softThresholdIn = np.reshape(softThresholdIn, (len(softThresholdIn), 3072))
             N = self.soft_threshold(lamda, softThresholdIn)
             print("Iteration NUmber is : ", i)
             print("NUmber of non zero elements  for N,lamda", np.count_nonzero(N), lamda)
@@ -733,60 +892,66 @@ class KENTE_DataLoader(DataLoader):
         return N
 
     def visualise_anamolies_detected(self,testX, noisytestX, decoded, N, best_top10_keys, worst_top10_keys, lamda):
-        side = 28
-        channel = 1
-        N = np.reshape(N, (len(N), 28,28,1))
+
+
+        print("[INFO:] The shape of input data  ",testX.shape)
+        print("[INFO:] The shape of decoded  data  ", decoded.shape)
+
+        side =32
+        channel = 3
+        N = np.reshape(N, (len(N), 32, 32, 3))
         # Display the decoded Original, noisy, reconstructed images
-        print("side:", side)
-        print("channel:", channel)
-        img = np.ndarray(shape=(side * 3, side * 10, channel))
-        print
-        "img shape:", img.shape
+        print("[INFO:] The shape of N  data  ", N.shape)
+
+        img = np.ndarray(shape=(side * 4, side * 10, channel))
+        print("img shape:", img.shape)
+
 
         best_top10_keys = list(best_top10_keys)
         worst_top10_keys = list(worst_top10_keys)
 
         for i in range(10):
-            row = i // 10 * 3
+            row = i // 10 * 4
             col = i % 10
             img[side * row:side * (row + 1), side * col:side * (col + 1), :] = testX[best_top10_keys[i]]
-            img[side * (row + 1):side * (row + 2), side * col:side * (col + 1), :] = decoded[best_top10_keys[i]]
-            img[side * (row + 2):side * (row + 3), side * col:side * (col + 1), :] = N[best_top10_keys[i]]
-            # img[side * (row + 3):side * (row + 4), side * col:side * (col + 1), :] = N[best_top10_keys[i]]
+            img[side * (row + 1):side * (row + 2), side * col:side * (col + 1), :] = noisytestX[best_top10_keys[i]]
+            img[side * (row + 2):side * (row + 3), side * col:side * (col + 1), :] = decoded[best_top10_keys[i]]
+            img[side * (row + 3):side * (row + 4), side * col:side * (col + 1), :] = N[best_top10_keys[i]]
 
         img *= 255
         img = img.astype(np.uint8)
-        img = np.reshape(img, (side * 3, side * 10))
+
         # Save the image decoded
         print("\nSaving results for best after being encoded and decoded: @")
         print(self.rcae_results + '/best/')
-        io.imsave(self.rcae_results  + '/best/' + str(lamda) + 'salt_p_denoising_cae_decode.png', img)
+        io.imsave(self.rcae_results + '/best/' + str(lamda) + '_RCAE.png', img)
 
         # Display the decoded Original, noisy, reconstructed images for worst
-        img = np.ndarray(shape=(side * 3, side * 10, channel))
+        img = np.ndarray(shape=(side * 4, side * 10, channel))
         for i in range(10):
-            row = i // 10 * 3
+            row = i // 10 * 4
             col = i % 10
             img[side * row:side * (row + 1), side * col:side * (col + 1), :] = testX[worst_top10_keys[i]]
-            img[side * (row + 1):side * (row + 2), side * col:side * (col + 1), :] = decoded[worst_top10_keys[i]]
-            img[side * (row + 2):side * (row + 3), side * col:side * (col + 1), :] = N[worst_top10_keys[i]]
-            # img[side * (row + 3):side * (row + 4), side * col:side * (col + 1), :] = N[worst_top10_keys[i]]
+            img[side * (row + 1):side * (row + 2), side * col:side * (col + 1), :] = noisytestX[worst_top10_keys[i]]
+            img[side * (row + 2):side * (row + 3), side * col:side * (col + 1), :] = decoded[worst_top10_keys[i]]
+            img[side * (row + 3):side * (row + 4), side * col:side * (col + 1), :] = N[worst_top10_keys[i]]
 
         img *= 255
         img = img.astype(np.uint8)
-        img = np.reshape(img, (side * 3, side * 10))
+
         # Save the image decoded
         print("\nSaving results for worst after being encoded and decoded: @")
         print(self.rcae_results + '/worst/')
-        io.imsave(self.rcae_results + '/worst/' + str(lamda) + 'salt_p_denoising_cae_decode.png', img)
+        io.imsave(self.rcae_results + '/worst/' + str(lamda) + '_RCAE.png', img)
 
         return
 
     def evalPred(self,predX, trueX, trueY):
 
-        trueX = np.reshape(trueX, (len(trueX), 784))
-        predX = np.reshape(predX, (len(predX), 784))
-
+        # trueX = np.reshape(trueX, (len(trueX), 784))
+        # predX = np.reshape(predX, (len(predX), 784))
+        trueX = np.reshape(trueX, (len(trueX), 1024))
+        predX = np.reshape(predX, (len(predX), 1024))
         predY = np.ones(len(trueX))
 
         if predX.shape[1] > 1:

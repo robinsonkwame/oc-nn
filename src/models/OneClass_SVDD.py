@@ -220,6 +220,7 @@ class OneClass_SVDD:
             self.n_train = len(self.data._X_train)
             # self.val = np.ones(Cfg.mnist_rep_dim) * 0.5
 
+    #  Not used (see src.data.main load_dataset)
     def load_data(self, data_loader=None, pretrain=False):
         self.data = data_loader()
         return

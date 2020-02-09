@@ -96,7 +96,7 @@ class Configuration(object):
     kente_bias = True
     kente_rep_dim = 32
     kente_architecture = 1  # choose one of the implemented architectures
-    kente_normal = 0 ##  9,8,7,6,5,4,3,2,1 0 
+    kente_normal = 0
     kente_outlier = -1
 
     # GTSRB dataset parameters
