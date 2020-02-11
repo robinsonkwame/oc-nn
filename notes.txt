@@ -11,3 +11,67 @@ Got an import doc_string type error
 ---
 What I did to fix was to run the first cell twice, so that it imported the new numpy/scipy
 and then the code ran.
+----
+Got this,
+-
+NFO: Autoencoder training completed for kente....
+---------------------------------------------------------------------------
+ValueError                                Traceback (most recent call last)
+<ipython-input-5-9b5c0fbe537c> in <module>()
+     34 
+     35   print("[INFO:] Testing with known anomalies")
+---> 36   ocnn.fit()
+     37   print("==============PREDICTING THE LABELS ==============================")
+     38   auc_score = ocnn.predict()
+
+5 frames
+/content/drive/My Drive/Dr Eglash/Kente_Cloth_Authentication/oc-nn/src/models/OneClass_SVDD.py in fit(self)
+   1801             # Create the SVDD network architecture and load pre-trained ae network weights
+   1802             # Initialize center c as the mean
+-> 1803             self.initialize_c_with_mean(inputs, encoder)
+   1804             inp = encoder.input
+   1805             out = encoder.layers[-1].output
+
+/content/drive/My Drive/Dr Eglash/Kente_Cloth_Authentication/oc-nn/src/models/OneClass_SVDD.py in initialize_c_with_mean(self, inputs, encoder)
+   1648     def initialize_c_with_mean(self, inputs, encoder):
+   1649 
+-> 1650         reps = self.get_OC_SVDD_network_reps(inputs, encoder)
+   1651 
+   1652         # print("[INFO:] The shape of the reps obtained are", reps.shape)
+
+/content/drive/My Drive/Dr Eglash/Kente_Cloth_Authentication/oc-nn/src/models/OneClass_SVDD.py in get_OC_SVDD_network_reps(self, inputs, encoder)
+    509         self.model_svdd = encoder
+    510 
+--> 511         self.reps = self.model_svdd.predict(inputs[:len(inputs), :])
+    512 
+    513         print("[INFO:] Obtained the initial representations of input using pretrained weights ")
+
+/usr/local/lib/python3.6/dist-packages/keras/engine/training.py in predict(self, x, batch_size, verbose, steps, callbacks, max_queue_size, workers, use_multiprocessing)
+   1378 
+   1379         # Case 2: Symbolic tensors or Numpy array-like.
+-> 1380         x, _, _ = self._standardize_user_data(x)
+   1381         if self.stateful:
+   1382             if x[0].shape[0] > batch_size and x[0].shape[0] % batch_size != 0:
+
+/usr/local/lib/python3.6/dist-packages/keras/engine/training.py in _standardize_user_data(self, x, y, sample_weight, class_weight, check_array_lengths, batch_size)
+    755             feed_input_shapes,
+    756             check_batch_axis=False,  # Don't enforce the batch size.
+--> 757             exception_prefix='input')
+    758 
+    759         if y is not None:
+
+/usr/local/lib/python3.6/dist-packages/keras/engine/training_utils.py in standardize_input_data(data, names, shapes, check_batch_axis, exception_prefix)
+    139                             ': expected ' + names[i] + ' to have shape ' +
+    140                             str(shape) + ' but got array with shape ' +
+--> 141                             str(data_shape))
+    142     return data
+    143 
+
+ValueError: Error when checking input: expected input_2 to have shape (32, 32, 3) but got array with shape (3, 32, 32)
+-----
+
+Need to make a kente specific line 1798 get_oneClass_trainData
+since that's the size of the input passed
+
+Also need to train on much smaller sample size to make sure it all goes though,
+that run took nearly 8 hours?
