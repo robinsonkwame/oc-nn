@@ -1018,10 +1018,14 @@ class OneClass_SVDD:
 
         # initialize the model
         svdd_network = Sequential()
-        inputShape = (28, 28, 1)
-        chanDim = -1  # since depth is appearing the end
+        #inputShape = (28, 28, 1)
+        inputShape = (32, 32, 3)        
+        chanDim = 3  # images have 3 channels
+        #chanDim = -1  # since depth is appearing the end
         # first set of CONV => RELU => POOL layers
 
+        # I'm not sure if there is an important ratio between
+        # the input size and the added Conv2d size but I'll leave as is?
         svdd_network.add(Conv2D(16, (3, 3), padding="same", input_shape=inputShape))
         svdd_network.add(Activation("relu"))
         svdd_network.add(BatchNormalization(axis=chanDim))
@@ -1057,7 +1061,7 @@ class OneClass_SVDD:
 
         # initialize the model
         autoencoder = Sequential()
-        inputShape = (28, 28, 1)
+        inputShape = (32, 32, 3)
         chanDim = -1  # since depth is appearing the end
         # first set of CONV => RELU => POOL layers
 
@@ -1161,16 +1165,16 @@ class OneClass_SVDD:
 
         def my_init(shape, dtype=None):
             W1_init = learn_dictionary(self.data._X_train, 16, 3, n_sample=500)
-            # print("self.data._X_train",self.data._X_train.shape)
-            # print("W1_init.shape",W1_init.shape)
-            W1_init = np.reshape(W1_init, (3, 3, 1, 16))
+            print("self.data._X_train", self.data._X_train.shape)
+            print("W1_init.shape", W1_init.shape)
+            #W1_init = np.reshape(W1_init, (3, 3, 1, 16))
             # print("Reshaped W1_init.shape", W1_init.shape)
             return W1_init
             # return W1_init
 
         chanDim = -1  # since depth is appearing the end
 
-        input_img = Input(shape=(28, 28, 1))  # adapt this if using `channels_first` image data format
+        input_img = Input(shape=(32, 32, 3))  # adapt this if using `channels_first` image data format
 
         x = Conv2D(16, (3, 3), kernel_initializer=my_init, use_bias=False, padding='same')(input_img)
         x = BatchNormalization(axis=chanDim)(x)
@@ -1364,6 +1368,75 @@ class OneClass_SVDD:
 
         return [autoencoder, encoder]
     
+
+    def compile_autoencoder_kente(self):       
+        def my_init(shape, dtype=None):
+            W1_init = learn_dictionary(self.data._X_train, 64, 3, n_sample=500)
+            # print("self.data._X_train",self.data._X_train.shape)
+            # print("W1_init.shape",W1_init.shape)
+            W1_init = np.reshape(W1_init, (3, 3, 3, 64))
+            # print("Reshaped W1_init.shape", W1_init.shape)
+            return W1_init
+            # return W1_init
+
+        chanDim = -1  # since depth is appearing the end
+
+        input_img = Input(shape=(32, 32, 3))  # adapt this if using `channels_first` image data format
+       
+        x = Conv2D(128, (3, 3),  use_bias=False, padding='same')(input_img)
+        x = BatchNormalization()(x)
+        x = LeakyReLU(0.1)(x)
+        x = MaxPooling2D((2, 2), padding='same')(x)
+        
+        x = Conv2D(64, (3, 3), padding='same',use_bias=False)(x)
+        x = BatchNormalization()(x)
+        x = LeakyReLU(0.1)(x)
+        x = MaxPooling2D((2, 2), padding='same')(x)
+        
+        x = Conv2D(32, (3, 3), padding='same',use_bias=False)(x)
+        x = BatchNormalization()(x)
+        x = LeakyReLU(0.1)(x)
+        x = MaxPooling2D((2, 2), padding='same')(x)
+        
+        x = Conv2D(32, (3, 3), padding='same',use_bias=False)(x)
+        x = BatchNormalization()(x)
+        x = LeakyReLU(0.1)(x)
+        encoded = MaxPooling2D((2, 2), padding='same')(x)
+        
+        x = Conv2D(32, (3, 3), padding='same',use_bias=False)(encoded)
+        x = BatchNormalization()(x)
+        x = LeakyReLU(0.1)(x)
+        x = UpSampling2D((2, 2))(x)
+        
+        x = Conv2D(32, (3, 3), padding='same',use_bias=False)(x)
+        x = BatchNormalization()(x)
+        x = LeakyReLU(0.1)(x)
+        x = UpSampling2D((2, 2))(x)
+        
+        x = Conv2D(64, (3, 3), padding='same',use_bias=False)(x)
+        x = BatchNormalization()(x)
+        x = LeakyReLU(0.1)(x)
+        x = UpSampling2D((2, 2))(x)
+        
+        x = Conv2D(128, (3, 3), padding='same',use_bias=False)(x)
+        x = BatchNormalization()(x)
+        x = LeakyReLU(0.1)(x)
+        x = UpSampling2D((2, 2))(x)
+        
+        x = Conv2D(3, (3, 3), padding='same',use_bias=False)(x)
+        x = BatchNormalization()(x)
+        decoded = Activation('sigmoid') (x)
+        
+        # this model maps an input to its encoded representation
+        encoder = Model(input_img, encoded)
+
+        autoencoder = Model(input_img, decoded)
+        # Compile the autoencoder with the mean squared error
+        autoencoder.compile(loss='binary_crossentropy', optimizer='adam')
+        # print("[INFO] : Autoencoder Architecture", autoencoder.summary())
+
+        return [autoencoder, encoder]
+
     def save_reconstructed_image(self, Xtest, X_decoded):
 
         # use Matplotlib (don't ask)
@@ -1400,8 +1473,14 @@ class OneClass_SVDD:
         
         # Compile the autoencoder with l2 loss and train for specified number of epochs
         if(OneClass_SVDD.DATASET == "kente"):
-            [cae, encoder] = self.compile_autoencoder()
+            [cae, encoder] = self.compile_autoencoder_kente()
             X = self.data._X_train
+            X = np.reshape(X,(len(X),32,32,3))
+            self.data._X_train = np.reshape(self.data._X_train,(len(self.data._X_train),32,32,3))
+            self.data._X_test = np.reshape(self.data._X_test,(len(self.data._X_test),32,32,3))
+            print("X.shape...", X.shape)
+            print("data._X_train.shape...", self.data._X_train.shape)
+
         elif(OneClass_SVDD.DATASET == "mnist"):
             [cae, encoder] = self.compile_autoencoder()
             X = self.data._X_train

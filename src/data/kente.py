@@ -144,13 +144,13 @@ class KENTE_DataLoader(DataLoader):
         #                            self.data_path)
 
         #  todo put in numpy direct loader
-        kente_images = np.load('images.npy' % self.data_path, allow_pickle=True)
-        kente_labels = np.load('classses.npy' % self.data_path, allow_pickle=True)
+        kente_images = np.load('%simages.npy' % self.data_path, allow_pickle=True)
+        kente_labels = np.load('%sclasses.npy' % self.data_path, allow_pickle=True)
 
         # ... construct train, test sets, note stratified balance
         X, X_test, y, y_test = train_test_split(
             kente_images, kente_labels,
-            test_size=0.20*len(kente_labels),
+            test_size=0.20,
             random_state=0,
             stratify=kente_labels
         ) 

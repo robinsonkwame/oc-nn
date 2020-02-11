@@ -1,0 +1,13 @@
+2/11
+
+Okay so last night I was able to start and run the convoultional autoencoder but the instance 
+shutdown (I think) since it was running for so long
+
+I have numpy 1.14.5, says i need to restart run time to use
+
+When I tried to re-run today I got this
+
+Got an import doc_string type error
+---
+What I did to fix was to run the first cell twice, so that it imported the new numpy/scipy
+and then the code ran.
