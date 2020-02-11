@@ -135,6 +135,9 @@ class OneClass_SVDD:
         self.intValue = intValue
         self.stringParam = stringParam
 
+        #  for reliable choice and other random generators
+        self.random_state = np.random.RandomState(seed=seed)
+
         # THIS IS WRONG! Parameters should have same name as attributes
         self.differentParam = otherParam
 
@@ -1478,6 +1481,17 @@ class OneClass_SVDD:
             X = np.reshape(X,(len(X),32,32,3))
             self.data._X_train = np.reshape(self.data._X_train,(len(self.data._X_train),32,32,3))
             self.data._X_test = np.reshape(self.data._X_test,(len(self.data._X_test),32,32,3))
+
+            #  So X is something like (4710, 32, 32, 3)
+            # but GTSRB trains on/with (1150, 32, 32, 2), much smaller
+            #
+            # So let's sample from X such that we can train the CAE in a 
+            # reasonable amount of time
+            mask = self.random_state.choice(X.shape[0],
+                                            1150)
+            X = X[mask, :]  # I assume X is only used for CAE training
+            #  and that it does not need to be the same size as 
+            # self.data._X_train.shape
             print("X.shape...", X.shape)
             print("data._X_train.shape...", self.data._X_train.shape)
 
