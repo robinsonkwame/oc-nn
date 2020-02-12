@@ -75,3 +75,70 @@ since that's the size of the input passed
 
 Also need to train on much smaller sample size to make sure it all goes though,
 that run took nearly 8 hours?
+----
+
+okay so I've gotten a lot further, now I'm running into an SVDD
+averaging issue where I'm unsure what the dimension shape should batch_size
+ self.model_svdd.predict(inputs[:len(inputs), :])
+
+ returns (6124, 2, 2, 32)
+ when asked to predict, which ... strange.
+ model_svdd borrows heavily from the SVDD repo, which in turn borrows 
+ from sklearn one class svm
+
+ the one calss svm returns n x 1
+ https://scikit-learn.org/stable/modules/generated/sklearn.svm.OneClassSVM.html#sklearn.svm.OneClassSVM.predict
+X {array-like, sparse matrix}, shape (n_samples, n_features)
+y_predarray, shape (n_samples,)
+-
+actually now that I think about it, that's probably why 
+
+reps = np.reshape(reps, (len(reps), self.h_size))
+hmm, maybe not
+yeah so, reps should be a prediction because it's calling .predict
+this suggests that the svd class wasn't configured right beause I should
+be able to pass in 
+
+N x 32 x 32 x 3 and get back N x 1
+not N x 2 x 2 x 32
+-
+I haven't thougth this through but I suspec that I should
+ensure that the svd is set up so taht it accepts N x 32 x 32 x 3
+and returns N x 1 on prediction
+-
+so then, the issue is that pretrain_cae is given a shape that
+isn't completely consumed (?)
+---
+note
+        def my_init(shape, dtype=None):
+            W1_init = learn_dictionary(self.data._X_train, 16, 3, n_sample=500)
+            print("self.data._X_train", self.data._X_train.shape)
+            print("W1_init.shape", W1_init.shape)
+            #W1_init = np.reshape(W1_init, (3, 3, 1, 16))
+            # print("Reshaped W1_init.shape", W1_init.shape)
+            return W1_init
+            # return W1_init
+
+        chanDim = -1  # since depth is appearing the end
+
+        input_img = Input(shape=(32, 32, 3))  # adapt this if using `channels_first` image data format
+for minst style
+---
+compile_autoencoder_kente
+    does not have  use my_init, very odd
+    ah neither does GTPRF
+-
+The decoded (end) layer for ketne is sigmoid, so we should be seeing 
+---
+okay
+so from https://blog.keras.io/building-autoencoders-in-keras.html  we see that the 
+autoencoder, of course, returns the same dimensions back under predict.
+
+This means that the autoencoder is good.
+---
+
+Okayk I found this: 
+https://github.com/danielenricocahall/One-Class-NeuralNetwork
+
+Pending some advice, I think I'll just use this version, it should be much simpler to work with than what I have here.
+

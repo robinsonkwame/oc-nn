@@ -1306,10 +1306,10 @@ class OneClass_SVDD:
        
         def my_init(shape, dtype=None):
             W1_init = learn_dictionary(self.data._X_train, 64, 3, n_sample=500)
-            # print("self.data._X_train",self.data._X_train.shape)
-            # print("W1_init.shape",W1_init.shape)
+            print("self.data._X_train",self.data._X_train.shape)
+            print("W1_init.shape",W1_init.shape)
             W1_init = np.reshape(W1_init, (3, 3, 3, 64))
-            # print("Reshaped W1_init.shape", W1_init.shape)
+            print("Reshaped W1_init.shape", W1_init.shape)
             return W1_init
             # return W1_init
 
@@ -1375,10 +1375,10 @@ class OneClass_SVDD:
     def compile_autoencoder_kente(self):       
         def my_init(shape, dtype=None):
             W1_init = learn_dictionary(self.data._X_train, 64, 3, n_sample=500)
-            # print("self.data._X_train",self.data._X_train.shape)
-            # print("W1_init.shape",W1_init.shape)
+            print("self.data._X_train",self.data._X_train.shape)
+            print("W1_init.shape",W1_init.shape)
             W1_init = np.reshape(W1_init, (3, 3, 3, 64))
-            # print("Reshaped W1_init.shape", W1_init.shape)
+            print("Reshaped W1_init.shape", W1_init.shape)
             return W1_init
             # return W1_init
 
@@ -1430,7 +1430,7 @@ class OneClass_SVDD:
         x = BatchNormalization()(x)
         decoded = Activation('sigmoid') (x)
         
-        # this model maps an input to its encoded representation
+        # This model maps an input to its encoded representation
         encoder = Model(input_img, encoded)
 
         autoencoder = Model(input_img, decoded)
@@ -1487,8 +1487,12 @@ class OneClass_SVDD:
             #
             # So let's sample from X such that we can train the CAE in a 
             # reasonable amount of time
+            # mask = self.random_state.choice(X.shape[0],
+            #                                 1150)
+
+            # quick fix to make sure this runs through
             mask = self.random_state.choice(X.shape[0],
-                                            1150)
+                                            100)                                            
             X = X[mask, :]  # I assume X is only used for CAE training
             #  and that it does not need to be the same size as 
             # self.data._X_train.shape
@@ -1649,12 +1653,17 @@ class OneClass_SVDD:
 
         reps = self.get_OC_SVDD_network_reps(inputs, encoder)
 
-        # print("[INFO:] The shape of the reps obtained are", reps.shape)
+        print("[INFO:] The shape of the reps obtained are", reps.shape)
 
+        #reps = np.reshape(reps, (len(reps), self.h_size))
+        #  so this is awkward because -1 means collapse the remaining
+        # dimensions such that the reshape fits. But I don't know
+        # if h_size, the numebr of hiddne layers, should be the final dimension
+        # or it should follow the number of instances
         reps = np.reshape(reps, (len(reps), self.h_size))
-        
+
         self.reps = reps
-        # print("[INFO:] The shape of the reps obtained are", reps.shape)
+        print("[INFO:] The shape of the reps obtained are", reps.shape)
 
         print("[INFO:] Initializing c and Radius R value...")
         eps = 0.1
@@ -1795,12 +1804,28 @@ class OneClass_SVDD:
         elif (self.lossfuncType == "ONE_CLASS_NEURAL_NETWORK"):
             # Build OC-NN network
             n_batches = -1  # -1 refers to considering all the data in one batch
+
+            # self.pretrain_cae has a side effect where it reshapes the data
+            # appropriately so that it can properly train. 
+            #
+            # I did not move this code into .get_oneClass_trainData() at the time
+            # since I did want to mess w that function unless I had to (?)
+            # 
+            # So, here I just place the call after self.pretrain... so taht it works off
+            # of the side effect manipulate data.
+            # The better fix would be to move that code into get_oneClass but I'mt ryign to patch
+            # things here so it runs through        
+            # inputs = self.get_oneClass_trainData()
+            # trainX = inputs
+            [cae, encoder] = self.pretrain_cae(solver="adam", lr=1.0, n_epochs=150)
+            print("[INFO:] Training SVDD ...")
             inputs = self.get_oneClass_trainData()
             trainX = inputs
-            [cae, encoder] = self.pretrain_cae(solver="adam", lr=1.0, n_epochs=150)
+
             # Create the SVDD network architecture and load pre-trained ae network weights
             # Initialize center c as the mean
             self.initialize_c_with_mean(inputs, encoder)
+            print('\t ... initalized center C ...')
             inp = encoder.input
             out = encoder.layers[-1].output
             from keras.models import Model
@@ -1814,7 +1839,6 @@ class OneClass_SVDD:
                 
             elif(OneClass_SVDD.DATASET == "cifar10" ):
                 X_train_to_Adjust_R = self.data._X_train
-            
             elif( OneClass_SVDD.DATASET == "mnist"):
                 X_train_to_Adjust_R = trainX
             elif( OneClass_SVDD.DATASET == "kente"):
@@ -1828,7 +1852,10 @@ class OneClass_SVDD:
 
             if(OneClass_SVDD.DATASET == "kente"):
                 
+                #mode_ocnn_svdd.add(Dense(32,activation='linear',use_bias=False))
+                #  as done in gtrsrb
                 mode_ocnn_svdd.add(Dense(32,activation='linear',use_bias=False))
+                mode_ocnn_svdd.add(Dense(16,activation='sigmoid',use_bias=False))
 
 
             if(OneClass_SVDD.DATASET == "mnist"):

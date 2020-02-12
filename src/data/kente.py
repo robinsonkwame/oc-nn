@@ -44,7 +44,7 @@ class RcaeParamSaver(Callback):
             # name = 'weights%08d.h5' % self.batch
             # self.model.save_weights(name)
 
-            U = self.ae.layers[9].get_weights()
+            U = self.ae.layers[9].oweights()
             self.ae.latent_weights[0] = U[0]
 
             V = self.ae.layers[11].get_weights()

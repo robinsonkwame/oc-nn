@@ -364,7 +364,9 @@ def learn_dictionary(X, n_filters, filter_size, n_sample=1000,
     dico = MiniBatchDictionaryLearning(n_components=n_filters, alpha=1, n_iter=1000, batch_size=10, shuffle=True,
                                        verbose=True, **kwargs)
     W = dico.fit(patches).components_
+    print("[INFO:] W shape before reshape", W.shape)
     W = W.reshape(n_filters, filter_size, filter_size,n_channels)
+    print("[INFO:] W shape AFTER reshape", W.shape)
 
     print('Dictionary learned.')
 
